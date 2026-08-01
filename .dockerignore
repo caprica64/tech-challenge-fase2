@@ -16,3 +16,9 @@ dist/
 build/
 .pytest_cache
 .ruff_cache
+data/
+models/
+results/
+tests/
+*.md
+!README.md

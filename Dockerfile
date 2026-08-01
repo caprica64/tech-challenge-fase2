@@ -1,29 +1,39 @@
-FROM python:3.12-slim AS base
+# === Stage 1: Instalar dependências ===
+FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     POETRY_VERSION=1.8.3 \
-    POETRY_HOME="/opt/poetry" \
     POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_CREATE=false
+    POETRY_VIRTUALENVS_IN_PROJECT=true
 
 RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
 
 WORKDIR /app
 
-# Copiar arquivos de dependência primeiro (cache de camadas)
+# Camada de dependências (cache enquanto pyproject/lock não mudam)
 COPY pyproject.toml poetry.lock ./
-
-# Instalar dependências de produção
 RUN poetry install --only=main --no-root
 
-# Copiar código fonte
-COPY src/ ./src/
-COPY dvc.yaml ./
-COPY configs/ ./configs/
-COPY README.md ./
+# === Stage 2: Imagem final enxuta ===
+FROM python:3.12-slim AS runtime
 
-# Instalar o pacote do projeto
-RUN poetry install --only=main
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:$PATH"
+
+WORKDIR /app
+
+# Copiar virtualenv do builder
+COPY --from=builder /app/.venv .venv
+
+# Copiar código fonte (camada separada — muda com frequência)
+COPY src/ ./src/
+COPY configs/ ./configs/
+COPY dvc.yaml README.md ./
+
+# Usuário não-root para segurança
+RUN useradd --create-home appuser
+USER appuser
 
 CMD ["python", "-m", "src.models.train"]
