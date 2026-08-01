@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# MLflow
+mlruns/
+mlartifacts/
+mlflow.db
+
+# DVC local cache
+/data/raw/*.csv
+/data/processed/
+!data/raw/*.csv.dvc
+
+# Models artifacts
+models/*.pkl
+models/*.joblib
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+.coverage
+htmlcov/
+
+# pyenv
+.python-version
+
+# Cache
+.pytest_cache/
+.ruff_cache/
+
+# Metrics (gerado pelo pipeline)
+metrics.json
