@@ -7,50 +7,38 @@ from pathlib import Path
 from src.config import settings
 
 DATASET_URL = (
-    "https://archive.ics.uci.edu/static/public/553/"
-    "clickstream+data+for+online+shopping.zip"
+    "https://archive.ics.uci.edu/static/public/553/" "clickstream+data+for+online+shopping.zip"
 )
+_EXTRACTED_NAME = "e-shop clothing 2008.csv"
+_DESC_NAME = "e-shop clothing 2008 data description.txt"
 
 
-def download_dataset(output_path: Path | None = None) -> Path:
-    """Baixa e extrai o dataset do UCI Machine Learning Repository.
-
-    O dataset contém 165.474 registros de clickstream de uma loja
-    online de roupas para gestantes (2008), com 14 features.
-
-    Args:
-        output_path: Caminho onde salvar o CSV final. Usa padrão se None.
-
-    Returns:
-        Caminho do arquivo CSV extraído.
-    """
-    path = output_path or settings.data_raw_path
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    if path.exists():
-        print(f"Dataset já existe em: {path}")
-        return path
-
-    zip_path = path.parent / "clickstream.zip"
-
+def _download_zip(zip_path: Path) -> None:
+    """Baixa o ZIP do UCI."""
     print(f"Baixando dataset de: {DATASET_URL}")
     urllib.request.urlretrieve(DATASET_URL, zip_path)
 
-    print("Extraindo arquivo ZIP...")
-    with zipfile.ZipFile(zip_path, "r") as zip_ref:
-        zip_ref.extractall(path.parent)
 
-    # Renomear para o nome padrão
-    extracted_file = path.parent / "e-shop clothing 2008.csv"
-    extracted_file.rename(path)
+def _extract_and_rename(zip_path: Path, dest: Path) -> None:
+    """Extrai ZIP, renomeia CSV e limpa temporários."""
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        zf.extractall(dest.parent)
+    (dest.parent / _EXTRACTED_NAME).rename(dest)
+    zip_path.unlink(missing_ok=True)
+    (dest.parent / _DESC_NAME).unlink(missing_ok=True)
 
-    # Limpar arquivos temporários
-    zip_path.unlink()
-    desc_file = path.parent / "e-shop clothing 2008 data description.txt"
-    if desc_file.exists():
-        desc_file.unlink()
 
-    print(f"Dataset salvo em: {path} (165.474 registros)")
+def download_dataset(output_path: Path | None = None) -> Path:
+    """Baixa e extrai o dataset do UCI (165.474 registros)."""
+    path = output_path or settings.data_raw_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        print(f"Dataset já existe em: {path}")
+        return path
+    zip_path = path.parent / "clickstream.zip"
+    _download_zip(zip_path)
+    _extract_and_rename(zip_path, path)
+    print(f"Dataset salvo em: {path}")
     return path
 
 
