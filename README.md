@@ -233,6 +233,42 @@ Resposta esperada:
 
 As features correspondem a: month, day, click_order, country, main_category, colour, photo_location, model_photography, price, price_above_avg, page_number.
 
+### Exemplos de Teste
+
+```bash
+# Teste 1: Usuário polonês, navegação longa, produto caro
+curl -X POST <URL> -H 'Content-Type: application/json' \
+  -d '{"features": [6, 15, 8, 29, 1, 2, 3, 1, 85, 1, 3]}'
+# → {"prediction": 1, "probability": 0.6925, "label": "compra"}
+
+# Teste 2: Usuário alemão, primeiro click, produto barato
+curl -X POST <URL> -H 'Content-Type: application/json' \
+  -d '{"features": [4, 3, 1, 16, 3, 5, 1, 2, 18, 2, 1]}'
+# → {"prediction": 1, "probability": 0.948, "label": "compra"}
+
+# Teste 3: Usuário francês, navegação média, preço acima da média
+curl -X POST <URL> -H 'Content-Type: application/json' \
+  -d '{"features": [7, 20, 4, 15, 2, 1, 5, 1, 55, 1, 2]}'
+# → {"prediction": 1, "probability": 0.6895, "label": "compra"}
+
+# Teste 4: Usuário do UK, click isolado, produto mediano
+curl -X POST <URL> -H 'Content-Type: application/json' \
+  -d '{"features": [5, 10, 1, 41, 1, 8, 2, 2, 40, 2, 1]}'
+# → {"prediction": 1, "probability": 0.945, "label": "compra"}
+```
+
+Para testar localmente (sem deploy):
+
+```bash
+poetry run python -m src.models.export
+poetry run python -c "
+import json
+from src.api.inference import handler
+event = {'body': json.dumps({'features': [6, 15, 8, 29, 1, 2, 3, 1, 85, 1, 3]})}
+print(handler(event))
+"
+```
+
 ## Dataset
 
 - **Nome:** Clickstream Data for Online Shopping
