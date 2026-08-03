@@ -1,0 +1,12 @@
+FROM public.ecr.aws/lambda/python:3.12
+
+# Instalar dependências mínimas para inferência
+COPY requirements.inference.txt ./
+RUN pip install --no-cache-dir -r requirements.inference.txt
+
+# Copiar modelo treinado e código de inferência
+COPY models/best_model.pkl ./models/
+COPY src/api/ ./src/api/
+
+# Handler do Lambda
+CMD ["src.api.inference.handler"]
