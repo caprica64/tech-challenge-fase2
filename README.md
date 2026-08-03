@@ -146,6 +146,93 @@ poetry run ruff check src/ tests/
 poetry run ruff format src/ tests/
 ```
 
+## Deploy do Endpoint de Inferência (Opcional)
+
+O projeto inclui um endpoint de inferência serverless via **AWS Lambda** com container image. Custo praticamente zero para demonstração.
+
+### Pré-requisitos
+
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) instalado
+- Docker instalado e rodando
+- Credenciais AWS configuradas (IAM User ou Role)
+
+### Configuração de Credenciais AWS
+
+**Opção recomendada: IAM Role (via SSO ou instance profile)**
+
+```bash
+aws configure sso
+# Seguir o fluxo de autenticação SSO
+```
+
+**Opção alternativa: IAM User com Access Keys**
+
+```bash
+aws configure
+# Informar AWS_ACCESS_KEY_ID e AWS_SECRET_ACCESS_KEY
+```
+
+O IAM User/Role precisa das seguintes permissões:
+- `ecr:CreateRepository`, `ecr:GetAuthorizationToken`, `ecr:PutImage`
+- `lambda:CreateFunction`, `lambda:UpdateFunctionCode`, `lambda:CreateFunctionUrlConfig`
+- `iam:PassRole` (para associar a execution role ao Lambda)
+
+### Criar a Execution Role do Lambda
+
+Antes do primeiro deploy, crie a role que o Lambda usará:
+
+```bash
+aws iam create-role \
+  --role-name lambda-execution-role \
+  --assume-role-policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [{
+      "Effect": "Allow",
+      "Principal": {"Service": "lambda.amazonaws.com"},
+      "Action": "sts:AssumeRole"
+    }]
+  }'
+
+aws iam attach-role-policy \
+  --role-name lambda-execution-role \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+```
+
+### Executar o Deploy
+
+```bash
+./scripts/deploy_inference.sh
+```
+
+O script automatiza: exportar modelo → build da imagem → push para ECR → criar/atualizar Lambda → criar Function URL.
+
+### Obter o Endpoint
+
+Ao final do script, a URL é exibida. Para consultar depois:
+
+```bash
+aws lambda get-function-url-config \
+  --function-name clickstream-purchase-prediction \
+  --query FunctionUrl \
+  --output text
+```
+
+### Testar o Endpoint
+
+```bash
+curl -X POST <URL_DO_LAMBDA> \
+  -H 'Content-Type: application/json' \
+  -d '{"features": [4, 15, 3, 29, 1, 2, 3, 1, 35, 1, 2]}'
+```
+
+Resposta esperada:
+
+```json
+{"prediction": 1, "probability": 0.7234, "label": "compra"}
+```
+
+As features correspondem a: month, day, click_order, country, main_category, colour, photo_location, model_photography, price, price_above_avg, page_number.
+
 ## Dataset
 
 - **Nome:** Clickstream Data for Online Shopping
