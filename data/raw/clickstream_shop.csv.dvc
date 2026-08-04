@@ -1,0 +1,5 @@
+outs:
+- md5: fd68cf573fa635e6b43302f794d837dc
+  size: 6675312
+  hash: md5
+  path: clickstream_shop.csv

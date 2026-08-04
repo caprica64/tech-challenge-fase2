@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "tech-challenge-fase2"
+version = "0.1.0"
+description = "Sistema preditivo de propensão de compra em e-commerce - Tech Challenge FIAP Fase 2"
+authors = ["Grupo FIAP <grupo@fiap.com.br>"]
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.14"
+scikit-learn = "^1.5.0"
+mlflow = "^2.14.0"
+pandas = "^2.2.0"
+numpy = "^1.26.0"
+dvc = "^3.51.0"
+dvc-s3 = "^3.0.0"
+python-dotenv = "^1.0.0"
+pyyaml = "^6.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.0"
+ruff = "^0.5.0"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]
+ignore = ["N803", "N806"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
