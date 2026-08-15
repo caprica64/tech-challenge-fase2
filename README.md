@@ -236,25 +236,25 @@ As features correspondem a: month, day, click_order, country, main_category, col
 ### Exemplos de Teste
 
 ```bash
-# Teste 1: Usuário polonês, navegação longa, produto caro
-curl -X POST <URL> -H 'Content-Type: application/json' \
-  -d '{"features": [6, 15, 8, 29, 1, 2, 3, 1, 85, 1, 3]}'
-# → {"prediction": 1, "probability": 0.6925, "label": "compra"}
-
-# Teste 2: Usuário alemão, primeiro click, produto barato
+# Teste 1: Sem compra — Alemão, primeiro click, produto barato
 curl -X POST <URL> -H 'Content-Type: application/json' \
   -d '{"features": [4, 3, 1, 16, 3, 5, 1, 2, 18, 2, 1]}'
-# → {"prediction": 1, "probability": 0.948, "label": "compra"}
+# → {"prediction": 0, "probability": 0.1992, "label": "sem_compra"}
 
-# Teste 3: Usuário francês, navegação média, preço acima da média
+# Teste 2: Sem compra — Francês, navegação média, preço alto
 curl -X POST <URL> -H 'Content-Type: application/json' \
   -d '{"features": [7, 20, 4, 15, 2, 1, 5, 1, 55, 1, 2]}'
-# → {"prediction": 1, "probability": 0.6895, "label": "compra"}
+# → {"prediction": 0, "probability": 0.1161, "label": "sem_compra"}
 
-# Teste 4: Usuário do UK, click isolado, produto mediano
+# Teste 3: Compra — Polonês, navegação longa, produto caro
 curl -X POST <URL> -H 'Content-Type: application/json' \
-  -d '{"features": [5, 10, 1, 41, 1, 8, 2, 2, 40, 2, 1]}'
-# → {"prediction": 1, "probability": 0.945, "label": "compra"}
+  -d '{"features": [6, 15, 8, 29, 1, 2, 3, 1, 85, 1, 3]}'
+# → {"prediction": 1, "probability": 0.616, "label": "compra"}
+
+# Teste 4: Compra — Polonês, muitos clicks, calças baratas, página 5
+curl -X POST <URL> -H 'Content-Type: application/json' \
+  -d '{"features": [8, 28, 15, 29, 1, 9, 6, 2, 15, 2, 5]}'
+# → {"prediction": 1, "probability": 0.9446, "label": "compra"}
 ```
 
 Para testar localmente (sem deploy):
@@ -265,7 +265,7 @@ poetry run python -c "
 import json
 from src.api.inference import handler
 event = {'body': json.dumps({'features': [6, 15, 8, 29, 1, 2, 3, 1, 85, 1, 3]})}
-print(handler(event))
+print(json.loads(handler(event)['body']))
 "
 ```
 
