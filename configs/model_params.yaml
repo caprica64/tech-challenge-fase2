@@ -1,0 +1,40 @@
+# Configurações de treinamento
+training:
+  test_size: 0.2
+  random_seed: 42
+  stratify: true
+
+# Dataset: Clickstream Data for Online Shopping (UCI)
+# 165.474 registros brutos → ~126k após feature engineering
+dataset:
+  source: "https://archive.ics.uci.edu/dataset/553"
+  name: "Clickstream Data for Online Shopping"
+  target: "purchased"
+  description: "Prever se sessão de navegação resultará em visita à página de compra"
+
+# Modelos para comparação
+models:
+  logistic_regression:
+    max_iter: 1000
+    solver: lbfgs
+
+  decision_tree:
+    max_depth: 10
+    min_samples_split: 10
+
+  random_forest:
+    n_estimators: 200
+    max_depth: 15
+    min_samples_split: 5
+
+  gradient_boosting:
+    n_estimators: 300
+    max_depth: 5
+    learning_rate: 0.1
+    subsample: 0.8
+
+  mlp_neural_network:
+    hidden_layer_sizes: [128, 64, 32]
+    activation: relu
+    max_iter: 500
+    early_stopping: true
