@@ -33,7 +33,7 @@ COPY configs/ ./configs/
 COPY dvc.yaml README.md ./
 
 # Usuário não-root para segurança
-RUN useradd --create-home appuser
+RUN useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser
 
 CMD ["python", "-m", "src.models.train"]
