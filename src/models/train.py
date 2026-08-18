@@ -6,6 +6,7 @@ import time
 import mlflow
 import mlflow.sklearn
 import pandas as pd
+from mlflow.tracking import MlflowClient
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -19,6 +20,8 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from src.config import settings
+
+REGISTERED_MODEL_NAME = "clickstream-purchase-model"
 
 
 def load_processed_data() -> dict:
@@ -113,26 +116,25 @@ def evaluate_model(model, X_test: pd.DataFrame, y_test: pd.Series) -> dict[str, 
 
 
 def _log_to_mlflow(model, name: str, params: dict, metrics: dict) -> None:
-    """Registra parâmetros, métricas e modelo no MLflow."""
+    """Registra parâmetros, métricas e modelo (como artefato da run) no MLflow."""
     mlflow.log_param("model_type", name)
     mlflow.log_param("random_seed", settings.random_seed)
     mlflow.log_params(params)
     mlflow.log_metrics(metrics)
-    mlflow.sklearn.log_model(
-        sk_model=model, artifact_path="model", registered_model_name=f"clickstream-{name.lower()}"
-    )
+    mlflow.sklearn.log_model(sk_model=model, artifact_path="model")
 
 
 def train_single_model(config: dict, data: dict) -> dict[str, float]:
-    """Treina um modelo e registra no MLflow."""
+    """Treina um modelo e loga parâmetros/métricas/artefato no MLflow."""
     name, model, params = config["name"], config["model"], config["params"]
-    with mlflow.start_run(run_name=name):
+    with mlflow.start_run(run_name=name) as run:
         start = time.time()
         model.fit(data["X_train"], data["y_train"])
         elapsed = time.time() - start
         metrics = evaluate_model(model, data["X_test"], data["y_test"])
         metrics["training_time_seconds"] = round(elapsed, 2)
         _log_to_mlflow(model, name, params, metrics)
+        metrics["run_id"] = run.info.run_id
         auc, f1 = metrics["roc_auc"], metrics["f1_score"]
         print(f"  {name:<20} | AUC={auc:.4f} | F1={f1:.4f} | {elapsed:.1f}s")
     return metrics
@@ -143,8 +145,26 @@ def find_best_model(results: dict[str, dict]) -> str:
     return max(results, key=lambda n: results[n]["roc_auc"])
 
 
+def promote_best_model(name: str, run_id: str, roc_auc: float) -> None:
+    """Registra o melhor modelo no Model Registry e o promove para Production."""
+    client = MlflowClient()
+    model_version = mlflow.register_model(f"runs:/{run_id}/model", REGISTERED_MODEL_NAME)
+    client.transition_model_version_stage(
+        name=REGISTERED_MODEL_NAME,
+        version=model_version.version,
+        stage="Production",
+        archive_existing_versions=True,
+    )
+    client.update_model_version(
+        name=REGISTERED_MODEL_NAME,
+        version=model_version.version,
+        description=f"Melhor modelo: {name} (ROC AUC={roc_auc:.4f})",
+    )
+    print(f"'{name}' registrado como '{REGISTERED_MODEL_NAME}' v{model_version.version} -> Production")
+
+
 def train_all_models() -> dict[str, dict]:
-    """Treina todos os modelos, compara e salva métricas."""
+    """Treina todos os modelos, compara, registra o melhor e salva métricas."""
     mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
     mlflow.set_experiment(settings.mlflow_experiment_name)
     data = load_processed_data()
@@ -155,8 +175,9 @@ def train_all_models() -> dict[str, dict]:
         results[config["name"]] = train_single_model(config, data)
 
     best = find_best_model(results)
-    results["_best_model"] = best
     print(f"\nMELHOR: {best} (AUC={results[best]['roc_auc']:.4f})")
+    promote_best_model(best, results[best]["run_id"], results[best]["roc_auc"])
+    results["_best_model"] = best
 
     with open("metrics.json", "w") as f:
         json.dump(results, f, indent=2)
