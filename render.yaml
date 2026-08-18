@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: clickstream-purchase-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health

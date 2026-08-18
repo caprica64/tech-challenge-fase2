@@ -72,7 +72,7 @@ poetry run python -m src.data.download
 
 ```bash
 docker compose up mlflow -d
-# Acessar UI em http://localhost:5000
+# Acessar UI em http://localhost:5001
 ```
 
 ### 5. Executar o pipeline completo
@@ -131,7 +131,7 @@ O tracking de experimentos registra para cada modelo:
 - **Métricas:** accuracy, precision, recall, f1_score, roc_auc, training_time_seconds
 - **Artefatos:** modelo serializado registrado no MLflow Model Registry
 
-UI: http://localhost:5000
+UI: http://localhost:5001
 
 ## Testes
 
