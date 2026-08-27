@@ -5,6 +5,7 @@ import pickle
 from pathlib import Path
 
 MODEL_PATH = Path("models/best_model.pkl")
+EXPECTED_N_FEATURES = 11
 _model = None
 
 
@@ -18,8 +19,13 @@ def _load_model():
 
 
 def _parse_features(body: dict) -> list[list[float]]:
-    """Extrai features do payload JSON."""
-    return [body.get("features", [])]
+    """Extrai e valida as features do payload JSON."""
+    features = body.get("features", [])
+    if len(features) != EXPECTED_N_FEATURES:
+        raise ValueError(
+            f"Esperado {EXPECTED_N_FEATURES} features, recebido {len(features)}."
+        )
+    return [features]
 
 
 def _build_response(status: int, body: dict) -> dict:
@@ -55,5 +61,9 @@ def handler(event: dict, context=None) -> dict:
             "probability": round(probability, 4),
             "label": "compra" if prediction == 1 else "sem_compra",
         })
+    except ValueError as e:
+        return _build_response(400, {"error": str(e)})
+    except FileNotFoundError:
+        return _build_response(503, {"error": f"Modelo não encontrado em {MODEL_PATH}"})
     except Exception as e:
         return _build_response(500, {"error": str(e)})
