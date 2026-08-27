@@ -1,6 +1,7 @@
 """Módulo de treinamento de múltiplos modelos com tracking via MLflow."""
 
 import json
+import logging
 import time
 
 import mlflow
@@ -20,6 +21,8 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from src.config import settings
+
+logger = logging.getLogger(__name__)
 
 REGISTERED_MODEL_NAME = "clickstream-purchase-model"
 
@@ -136,7 +139,7 @@ def train_single_model(config: dict, data: dict) -> dict[str, float]:
         _log_to_mlflow(model, name, params, metrics)
         metrics["run_id"] = run.info.run_id
         auc, f1 = metrics["roc_auc"], metrics["f1_score"]
-        print(f"  {name:<20} | AUC={auc:.4f} | F1={f1:.4f} | {elapsed:.1f}s")
+        logger.info("  %-20s | AUC=%.4f | F1=%.4f | %.1fs", name, auc, f1, elapsed)
     return metrics
 
 
@@ -160,7 +163,7 @@ def promote_best_model(name: str, run_id: str, roc_auc: float) -> None:
         version=model_version.version,
         description=f"Melhor modelo: {name} (ROC AUC={roc_auc:.4f})",
     )
-    print(f"'{name}' registrado como '{REGISTERED_MODEL_NAME}' v{model_version.version} -> Production")
+    logger.info("'%s' registrado como '%s' v%s -> Production", name, REGISTERED_MODEL_NAME, model_version.version)
 
 
 def train_all_models() -> dict[str, dict]:
@@ -170,12 +173,13 @@ def train_all_models() -> dict[str, dict]:
     data = load_processed_data()
     results: dict[str, dict] = {}
 
-    print(f"TREINO — {len(data['X_train']) + len(data['X_test'])} amostras")
+    logger.info("TREINO — %d amostras", len(data['X_train']) + len(data['X_test']))
+
     for config in get_model_configs():
         results[config["name"]] = train_single_model(config, data)
 
     best = find_best_model(results)
-    print(f"\nMELHOR: {best} (AUC={results[best]['roc_auc']:.4f})")
+    logger.info("MELHOR: %s (AUC=%.4f)", best, results[best]['roc_auc'])
     promote_best_model(best, results[best]["run_id"], results[best]["roc_auc"])
     results["_best_model"] = best
 
@@ -185,4 +189,6 @@ def train_all_models() -> dict[str, dict]:
 
 
 if __name__ == "__main__":
+    from src.logging_config import setup_logging
+    setup_logging()
     train_all_models()
