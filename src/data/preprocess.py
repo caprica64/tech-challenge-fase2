@@ -1,5 +1,6 @@
 """Módulo de pré-processamento dos dados de clickstream do e-commerce."""
 
+import logging
 from pathlib import Path
 
 import pandas as pd
@@ -7,6 +8,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from src.config import settings
+
+logger = logging.getLogger(__name__)
 
 _COLUMN_RENAMES = {
     "order": "click_order",
@@ -86,7 +89,7 @@ def run_preprocessing(file_path: Path | None = None) -> dict:
     X_train, X_test, y_train, y_test = _split_data(features, target)
     X_train, X_test, scaler = scale_features(X_train, X_test)
     _save_splits(X_train, X_test, y_train, y_test)
-    print(f"Treino: {len(X_train)} | Teste: {len(X_test)}")
+    logger.info("Treino: %d | Teste: %d", len(X_train), len(X_test))
     return {
         "X_train": X_train,
         "X_test": X_test,
@@ -97,4 +100,6 @@ def run_preprocessing(file_path: Path | None = None) -> dict:
 
 
 if __name__ == "__main__":
+    from src.logging_config import setup_logging
+    setup_logging()
     run_preprocessing()

@@ -1,5 +1,6 @@
 """Módulo para exportar o melhor modelo treinado para deploy."""
 
+import logging
 import pickle
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def _train_best_pipeline() -> Pipeline:
@@ -51,9 +54,11 @@ def export_model(output_path: Path | None = None) -> Path:
     with open(path, "wb") as f:
         pickle.dump(pipeline, f)
 
-    print(f"Modelo exportado em: {path}")
+    logger.info("Modelo exportado em: %s", path)
     return path
 
 
 if __name__ == "__main__":
+    from src.logging_config import setup_logging
+    setup_logging()
     export_model()
